@@ -1,0 +1,710 @@
+import './style.css';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import * as dat from 'dat.gui';
+import { Vector3 } from 'three';
+import { Paratrooper } from './physics/paratrooper';
+
+
+
+
+
+
+
+/**
+ * @parameters
+ */
+const parameters = {
+   m : 80,
+    y : 1700,  // Default initial height value
+    frontalArea : 1.0, // Default frontal area value
+    wind_veolcity : 0,
+    velocity : new THREE.Vector3(0,0,0),
+    acceleration :  new THREE.Vector3(0,0,0),
+    crossSectionalArea :  20,
+    wind_angle : 0,
+    Cd : 0.47
+}
+
+
+
+
+/**
+ * @rotation 
+ */
+var axis = new THREE.Vector3(0, 1, 0);
+var wind_angle = Math.PI / 2; // 90 degrees
+
+
+/**
+ * 
+ * @Audio
+ */
+ const listener = new THREE.AudioListener();
+ const audioLoader = new THREE.AudioLoader();
+ const sound = new THREE.PositionalAudio(listener);
+ const listener2 = new THREE.AudioListener();
+ const audioLoader2 = new THREE.AudioLoader();
+ const sound2 = new THREE.PositionalAudio(listener);
+ 
+ audioLoader.load('/sounds/helicopter.mp3', function(buffer) {
+  sound.setBuffer(buffer);
+  sound.setLoop(true); // Set loop to true for continuous looping
+  sound.setVolume(0.6);
+ //helicopter.add(sound);
+}); 
+document.addEventListener('keydown', function(event) {
+if (event.key === 'o') {
+  sound.play();
+}
+if (event.key === 'p') {
+  sound.stop();
+}
+}); 
+audioLoader2.load('/sounds/parachute.mp3', function(buffer) {
+  sound2.setBuffer(buffer);
+  sound2.setLoop(false); // Set loop to true for continuous looping
+  sound2.setVolume(2); 
+//  object.add(sound2);
+});
+document.addEventListener('keydown', function(event) {
+  if (event.key === 'f') {
+      sound2.play();
+  }
+});
+/**
+ * 
+ * @scene
+ */
+ document.addEventListener('DOMContentLoaded', function() {
+  // Listen for the click event on the loading image
+  const loadingImage = document.querySelector('#loading-container img');
+  loadingImage.addEventListener('click', function() {
+      var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      // Use the audioContext to play audio using Howler.js or any other audio library
+      // ...
+      
+      // After setting up audio, show the Three.js scene
+      showScene();
+  });
+});
+function showScene() {
+  // Hide the loading container
+  const loadingContainer = document.getElementById('loading-container');
+  loadingContainer.style.display = 'none';
+
+  // Show the scene container
+  const sceneContainer = document.getElementById('scene-container');
+  sceneContainer.style.display = 'block';
+// Scene setup
+const canvas = document.querySelector('canvas.webgl');
+const scene = new THREE.Scene();
+
+const gltfLoader = new GLTFLoader();
+const textureLoader = new THREE.TextureLoader();
+let mixer = null
+let mixer2 = null
+let paratrooper1 = null
+let helicopter = null
+let vehicle = null 
+let military = null 
+let parachute = null
+let patria_amv = null
+let flag = null
+const paratrooper = new THREE.Mesh(
+  new THREE.CylinderGeometry(5, 5, 20, 32 ),
+  new THREE.MeshBasicMaterial(
+      {
+          color: 0xff0000
+      }
+  )
+)
+paratrooper.position.y = parameters.y
+scene.add(paratrooper)
+if(paratrooper){
+  paratrooper.visible=false
+}
+/**
+ * Models
+ */
+ gltfLoader.load(
+  '/models/helicopter/bell206_helicopter.glb',
+  (gltf) => {
+    gltf.scene.scale.set(85, 85, 85)
+    gltf.scene.translateY(parameters.y+60)
+
+    gltf.scene.traverse((child) => {
+      
+        if (child.isMesh) {
+          // Assign textures to the materials
+          // ...
+          
+          // Replace specific textures for specific materials
+          // ...
+        }
+      
+    });
+
+    helicopter = gltf.scene
+
+
+     
+    scene.add(helicopter)
+
+
+    if (gltf.animations && gltf.animations.length > 0) {
+      mixer = new THREE.AnimationMixer(gltf.scene)
+      const action = mixer.clipAction(gltf.animations[0])
+      action.play()
+
+      
+    } else {
+      console.log('No animations found in the GLTF file.')
+    }
+  },
+  undefined,
+  (error) => {
+    console.error('An error occurred while loading the GLTF file:', error)
+  }
+)
+
+
+gltfLoader.load(
+  '/models/person/persoon.glb',
+  (gltf) => {
+    gltf.scene.scale.set(0.3, 0.3, 0.3);
+    gltf.scene.translateY(300)
+    //gltf.scene.add(sound);
+    // Load textures and assign them to the materials
+    // ...
+    
+
+    gltf.scene.traverse((child) => {
+      
+        if (child.isMesh) {
+          // Assign textures to the materials
+          // ...
+          
+          // Replace specific textures for specific materials
+          // ...
+        }
+      
+    });
+
+    paratrooper1 = gltf.scene
+
+
+     
+    scene.add(paratrooper1)
+
+
+  },
+  undefined,
+  (error) => {
+    console.error('An error occurred while loading the GLTF file:', error)
+  }
+)
+ gltfLoader.load(
+  '/models/military.glb',
+  (gltf) => {
+    gltf.scene.scale.set(0.08, 0.08, 0.08)
+    gltf.scene.translateZ(-184.5)
+    gltf.scene.translateX(-25)
+    gltf.scene.rotateY(-7)
+
+
+
+    // Load textures and assign them to the materials
+    // ...
+
+    gltf.scene.traverse((child) => {
+      if (child.isMesh) {
+        // Assign textures to the materials
+        // ...
+
+        // Replace specific textures for specific materials
+        // ...
+      }
+    })
+
+    military = gltf.scene
+
+    scene.add(military)
+
+    if (gltf.animations && gltf.animations.length > 0) {
+      mixer = new THREE.AnimationMixer(gltf.scene)
+      const action = mixer.clipAction(gltf.animations[0])
+      action.play()
+    } else {
+      console.log('No animations found in the GLTF file.')
+    }
+  },
+  undefined,
+  (error) => {
+    console.error('An error occurred while loading the GLTF file:', error)
+  }
+)
+gltfLoader.load(
+  '/models/parachute/army_parachute.glb',
+  (gltf) => {
+    gltf.scene.scale.set(56, 40, 56)
+    gltf.scene.translateY(255)
+
+
+    // Load textures and assign them to the materials
+    // ...
+
+    gltf.scene.traverse((child) => {
+      if (child.isMesh) {
+        // Assign textures to the materials
+        // ...
+        // Replace specific textures for specific materials
+        // ...
+      }
+    })
+
+    parachute = gltf.scene
+    parachute.visible = false 
+
+    scene.add(parachute)
+  })
+gltfLoader.load(
+  '/models/flag.glb',
+  (gltf) => {
+    gltf.scene.scale.set(5, 5, 5)
+    gltf.scene.translateZ(-127.5)
+    gltf.scene.translateX(-100)
+    gltf.scene.translateY(26)
+
+
+
+    // Load textures and assign them to the materials
+    // ...
+
+    gltf.scene.traverse((child) => {
+      if (child.isMesh) {
+        // Assign textures to the materials
+        // ...
+        // Replace specific textures for specific materials
+        // ...
+      }
+    })
+
+    flag = gltf.scene
+
+    scene.add(flag)
+    mixer2 = new THREE.AnimationMixer(gltf.scene)
+    const action = mixer2.clipAction(gltf.animations[0])
+    action.play()
+   
+  },
+  undefined,
+  (error) => {
+    console.error('An error occurred while loading the GLTF file:', error)
+  }
+)
+
+gltfLoader.load(
+  '/models/patria_amv.glb',
+  (gltf) => {
+    gltf.scene.scale.set(9, 9, 9)
+    gltf.scene.translateZ(-127.5)
+    gltf.scene.translateX(-88)
+    gltf.scene.rotateY(17)
+
+
+
+    // Load textures and assign them to the materials
+    // ...
+
+    gltf.scene.traverse((child) => {
+      if (child.isMesh) {
+        // Assign textures to the materials
+        // ...
+        // Replace specific textures for specific materials
+        // ...
+      }
+    })
+
+    patria_amv = gltf.scene
+
+    scene.add(patria_amv)
+
+    if (gltf.animations && gltf.animations.length > 0) {
+      mixer = new THREE.AnimationMixer(gltf.scene)
+      const action = mixer.clipAction(gltf.animations[0])
+      action.play()
+    } else {
+      console.log('No animations found in the GLTF file.')
+    }
+  },
+  undefined,
+  (error) => {
+    console.error('An error occurred while loading the GLTF file:', error)
+  }
+)
+gltfLoader.load(
+  '/models/police_vehicle.glb',
+  (gltf) => {
+    gltf.scene.scale.set(9, 9, 9)
+    gltf.scene.translateZ(-90.5)
+    gltf.scene.translateX(-35)
+    gltf.scene.rotateY(-10)
+
+
+
+    // Load textures and assign them to the materials
+    // ...
+
+    gltf.scene.traverse((child) => {
+      if (child.isMesh) {
+        // Assign textures to the materials
+        // ...
+        // Replace specific textures for specific materials
+        // ...
+      }
+    })
+
+    vehicle = gltf.scene
+
+    scene.add(vehicle)
+
+    if (gltf.animations && gltf.animations.length > 0) {
+      mixer = new THREE.AnimationMixer(gltf.scene)
+      const action = mixer.clipAction(gltf.animations[0])
+      action.play()
+    } else {
+      console.log('No animations found in the GLTF file.')
+    }
+  },
+  undefined,
+  (error) => {
+    console.error('An error occurred while loading the GLTF file:', error)
+  }
+)
+let skybox3 = [
+  "/skybox/3/6.jpg",
+  "/skybox/3/3.jpg",
+  "/skybox/3/5.jpg",
+  "/skybox/3/2.jpg",
+  "/skybox/3/1.jpg",
+  "/skybox/3/4.jpg",
+];
+let skyboxTex = new THREE.CubeTextureLoader().load(skybox3);
+scene.background = skyboxTex;
+
+
+
+
+
+
+/**
+ * Floor
+ */
+ const floorTexture = textureLoader.load('/textures/floor.jpg');
+ const floorSize = 2000; // Adjust the size as needed
+ const numFloors = 3; // Adjust the number of floors in each direction
+ 
+ for (let i = -numFloors; i <= numFloors; i++) {
+   for (let j = -numFloors; j <= numFloors; j++) {
+     const floorGeometry = new THREE.PlaneGeometry(floorSize, floorSize);
+     const floorMaterial = new THREE.MeshStandardMaterial({
+       map: floorTexture,
+       metalness: 0,
+       roughness: 5.5
+     });
+     const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+     floor.position.x = i * floorSize;
+     floor.position.z = j * floorSize;
+     floor.position.y = 0; // Adjust the vertical position as needed
+     floor.rotation.x = -Math.PI * 0.5;
+     scene.add(floor);
+   }
+ }
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * 
+ * @ambientLight
+ */
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+scene.add(ambientLight);
+
+const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6);
+directionalLight.castShadow = true;
+scene.add(directionalLight);
+
+const sizes = {
+  width: window.innerWidth,
+  height: window.innerHeight,
+};
+
+window.addEventListener('resize', () => {
+  sizes.width = window.innerWidth;
+  sizes.height = window.innerHeight;
+
+  camera.aspect = sizes.width / sizes.height;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(sizes.width, sizes.height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+});
+
+const keyboard = {};  
+
+window.addEventListener('keyup', (event) => {
+  keyboard[event.key] = false;
+});
+const updateHelicopter = () => {
+
+  if (keyboard.f) {
+    // Make the parachute open
+    if (parachute) {
+ 
+              camera.lookAt(finalLookAtPosition);       const parachuteAnimationLoop = () => {
+        updateParachute()
+        requestAnimationFrame(parachuteAnimationLoop)
+      }
+
+      parachuteAnimationLoop()
+    }
+    
+  }
+
+}
+
+/**
+ * @Camera
+ */
+ const camera = new THREE.PerspectiveCamera(75, sizes.width / sizes.height, 0.1, 10000);
+camera.position.set(-250, paratrooper.position.y, 270);
+camera.far = 5000;
+scene.add(camera);
+
+const controls = new OrbitControls(camera, canvas);
+controls.target.set(40, 400, 0);
+controls.enableDamping = true;
+
+const renderer = new THREE.WebGLRenderer({
+  canvas: canvas,
+});
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setSize(sizes.width, sizes.height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const cameraFollowOffset = new THREE.Vector3(-1,100, 250); // Adjust the camera offset as needed
+
+
+
+
+
+
+/**
+ * @physic
+ */
+const clock = new THREE.Clock();
+const PhysicParatrooper = new Paratrooper(
+  paratrooper.position,
+  parameters.velocity,
+     parameters.acceleration,
+        parameters.m, 
+        parameters.wind_veolcity, 
+         parameters.wind_angle, 
+         parameters.y,
+         3,
+         0.07 
+         )
+         
+        
+         
+
+         window.addEventListener('keydown',
+          onKeydown
+        , false);
+
+        function onKeydown(event) {
+          // Store the key code in the keyboard object
+          keyboard[event.keyCode] = true;
+          // console.log("zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz     " ,PhysicParatrooper.m)        
+
+         
+            if(event.keyCode == 70){    // Left arrow key
+             
+              if(parachute){parachute.visible = true}
+
+              // PhysicParatrooper.crossSectionalArea = 20
+              PhysicParatrooper.total_crossSectionalArea = PhysicParatrooper.crossSectionalArea 
+              PhysicParatrooper.total_Cd= PhysicParatrooper.Cd 
+              PhysicParatrooper.open_parachute = true
+              console.log("ooooooooooooooooooooooooo     " )     
+              
+              
+
+              
+              
+            }
+                 
+               if(event.keyCode == 38){    // Forward arrow key  
+                 PhysicParatrooper.pull_Forward = true
+                }   
+              
+               if(event.keyCode == 37){    // left arrow key
+                 PhysicParatrooper.pull_Left = true
+                }
+              
+               if(event.keyCode == 39){    // Right arrow key
+                 PhysicParatrooper.pull_Right = true
+                }
+      }
+        
+
+
+/**
+ * @gui
+ */
+ const gui = new dat.GUI({
+  closed: false,
+  width: 400
+})
+
+const parachutist  = gui.addFolder("Parachutist ")
+parachutist.add(parameters, 'm').min(60).max(1100).step(5).onFinishChange(() => {
+  PhysicParatrooper.m = parameters.m
+  
+})
+
+
+const parachut  = gui.addFolder("Parachut ")
+parachut.add(parameters, 'crossSectionalArea').min(14).max(30).step(2).onFinishChange(() => {
+  PhysicParatrooper.total_crossSectionalArea= parameters.crossSectionalArea
+  console.log(" xxxxxxxxxxxxxxxx                    " , PhysicParatrooper.crossSectionalArea )
+
+})
+parachut.add(parameters, 'Cd').min(0.47).max(2.5).step(0.1).onFinishChange(() => {
+  PhysicParatrooper.total_Cd= parameters.Cd
+})
+
+
+
+const world  = gui.addFolder("World ")
+world.add(parameters, 'wind_veolcity').min(200).max(10000).step(25).onFinishChange(() => {
+  PhysicParatrooper.wind_veolcity= parameters.wind_veolcity
+})
+world.add(parameters, 'wind_angle').min(0).max(360).step(30).onFinishChange(() => {
+  PhysicParatrooper.wind_angle= parameters.wind_angle
+})
+
+
+
+
+/**
+ * @open_parachut
+*/
+
+
+
+
+ const tick = () => {
+   const elapsedTime = clock.getElapsedTime();
+   const deltaTime = 0.02
+controls.target.copy(paratrooper.position);
+   
+   PhysicParatrooper.update(deltaTime)
+
+  /**
+      * دمج المظلة مع المظلي
+      */
+   if(parachute!=null){
+    paratrooper.position.copy(PhysicParatrooper.position);
+    
+    // Copy paratrooper position but offset y upwards
+    const offset = new THREE.Vector3(0, 80, 0); 
+    parachute.position.copy(PhysicParatrooper.position).add(offset);  
+  }
+  if(paratrooper1!=null){
+    paratrooper.position.copy(PhysicParatrooper.position);
+    paratrooper1.position.copy(PhysicParatrooper.position);
+    
+  }
+
+  // Check if the paratrooper is loaded and not null
+  if (PhysicParatrooper.position.y > 7) {
+    PhysicParatrooper.printConsole()
+    paratrooper.position.x = PhysicParatrooper.position.x
+    paratrooper.position.y = PhysicParatrooper.position.y
+    paratrooper.position.z = PhysicParatrooper.position.z
+
+    const lookAtPosition = paratrooper.position.clone();
+    
+    lookAtPosition.y += 50; 
+
+    camera.lookAt(lookAtPosition);
+  }else{
+    PhysicParatrooper.velocity = new THREE.Vector3(0,0,0)
+    paratrooper.position.x = paratrooper.position.x
+    paratrooper.position.y = 7
+    paratrooper.position.z = paratrooper.position.z
+    // console.log(paratrooper.position.y)
+  }
+
+  if (mixer) {
+    mixer.update(deltaTime/5)
+  }
+  if (mixer2) {
+    mixer2.update(deltaTime/5)
+  }
+  //////show final
+  function animate() {
+    if (paratrooper.position.y <=7) {
+       
+        const infoElement2 = document.getElementById('info2');
+        infoElement2.textContent = 'Paratrooper has landed!';
+ 
+    }
+
+
+  }
+  
+if(parachute){  const lookAtPosition = paratrooper.position.clone().add(cameraFollowOffset);
+  camera.position.lerp(lookAtPosition, 0.01); 
+  camera.lookAt(paratrooper.position); 
+    const offset2 = new THREE.Vector3(-10, -200, 200); 
+  const finalLookAtPosition = parachute.position.clone().add(offset2);}
+  const heightValueElement = document.getElementById('heightValue');
+  const velocityValueElement = document.getElementById('velocityValue');
+  const acc = document.getElementById('acc');
+  const totalforcees = document.getElementById('windSpeedValue');
+  //const airforce = document.getElementById('airforce');
+  
+  heightValueElement.textContent = PhysicParatrooper.position.y.toFixed(2); // Display height
+  velocityValueElement.textContent = PhysicParatrooper.velocity.length().toFixed(2); // Display velocity magnitude
+  acc.textContent = PhysicParatrooper.acc.length().toFixed(2); // Display wind speed
+  totalforcees.textContent = PhysicParatrooper.total_force.length().toFixed(2); // Display wind speed
+  //airforce.textContent = PhysicParatrooper.air_force.length().toFixed(2); // Display wind speed
+
+
+  controls.update();
+  updateHelicopter()
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+
+  window.requestAnimationFrame(tick);
+};
+
+tick();
+
+}
